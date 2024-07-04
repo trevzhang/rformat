@@ -3,6 +3,7 @@ use regex::Regex;
 use serde_json::{json, Value, Map};
 use clap::Parser;
 use url::Url;
+use copypasta::{ClipboardContext, ClipboardProvider};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -18,6 +19,10 @@ struct Args {
     /// Parse as URL query string
     #[clap(short, long)]
     url: bool,
+
+    /// Copy output to clipboard
+    #[clap(short, long)]
+    clip: bool,
 }
 
 fn parse_java_to_string(s: &str) -> Map<String, Value> {
@@ -108,9 +113,17 @@ fn main() {
         parse_java_to_string(&args.input)
     };
 
-    if args.json {
-        println!("{}", serde_json::to_string_pretty(&parsed_data).unwrap());
+    let output = if args.json {
+        serde_json::to_string_pretty(&parsed_data).unwrap()
     } else {
-        print!("{}", format_output(&parsed_data, 0));
+        format_output(&parsed_data, 0)
+    };
+
+    if args.clip {
+        let mut ctx = ClipboardContext::new().expect("Failed to create clipboard context");
+        ctx.set_contents(output.clone()).expect("Failed to set clipboard contents");
+        println!("Output copied to clipboard.");
     }
+
+    print!("{}", output);
 }
